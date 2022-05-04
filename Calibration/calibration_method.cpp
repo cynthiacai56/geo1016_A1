@@ -239,8 +239,8 @@ bool Calibration::calibration(
             if (i0 == j){
                 // then I have everything I need to construct the row
                 // set the first row by a 9-dimensional vector
-                P.set_row(i, {-el3.x(), -el3.y(), -el3.z(), -1, 0, 0, 0, 0, el2.x()*el3.x(), el2.x()*el3.y(), el2.x()*el3.z(), el2.x()}); // {....} is equivalent to a std::vector<double>
-                P.set_row(ii, {0, 0, 0, 0, -el3.x(), -el3.y(), -el3.z(), -1, el2.y()*el3.x(), el2.y()*el3.y(), el2.y()*el3.z(), el2.y()});
+                P.set_row(i, {el3.x(), el3.y(), el3.z(), 1, 0, 0, 0, 0, -el2.x()*el3.x(), -el2.x()*el3.y(), -el2.x()*el3.z(), -el2.x()}); // {....} is equivalent to a std::vector<double>
+                P.set_row(ii, {0, 0, 0, 0, el3.x(), el3.y(), el3.z(), 1, -el2.y()*el3.x(), -el2.y()*el3.y(), -el2.y()*el3.z(), -el2.y()});
             }
             j++;
         }
@@ -249,7 +249,7 @@ bool Calibration::calibration(
         i0++;
     }
 
-    std::cout << "P: \n" << P << std::endl;
+    //std::cout << "P: \n" << P << std::endl;
 
 
     // TODO: solve for M (the whole projection matrix, i.e., M = K * [R, t]) using SVD decomposition.
@@ -262,9 +262,9 @@ bool Calibration::calibration(
     Matrix V(12, 12, 0.0); // stores the corresponding singular vectors. We choose the singular vector p12 which minimises the error.
     svd_decompose(P, U, S, V);
 
-    std::cout << "U: \n" << U << std::endl;
-    std::cout << "S: \n" << S << std::endl;
-    std::cout << "V: \n" << V << std::endl;
+//    std::cout << "U: \n" << U << std::endl;
+//    std::cout << "S: \n" << S << std::endl;
+//    std::cout << "V: \n" << V << std::endl;
 
     // The solution is the last column of VT. Get the last column of VT (transpose(V)). Which is the last row of V.
     // according to the definition, A = U * S * V^T
@@ -276,174 +276,236 @@ bool Calibration::calibration(
     std::vector<double> em;
     for(int k = 0; k < V.rows(); k++) {
         //take the last row
-        //std::cout << "the last row of V: " << V[V.rows()-1][k] << std::endl; //Last row
-        //em.emplace_back(V[V.rows()-1][k]);
+//        std::cout << "the last column of V: " << V[V.rows()-1][k] << std::endl; //Last row
+//        em.emplace_back(V[V.rows()-1][k]);
         // take the last column
-        std::cout << "the last row of V: " << V[k][V.rows()-1] << std::endl; //Last row
+        std::cout << "the last column of V: " << V[k][V.rows()-1] << std::endl; //Last row
         em.emplace_back(V[k][V.rows()-1]);
         r++;
     }
-    std::cout << "elements for M: " << em << std::endl;
+    //std::cout << "elements for M: " << em << std::endl;
 
     // my Projection Matrix M
     Matrix34 M(em[0], em[1], em[2], em[3],
                em[4], em[5], em[6], em[7],
                em[8], em[9], em[10], em[11]);
-    std::cout << "M: \n" << M << std::endl;
+    //std::cout << "M: \n" << M << std::endl;
 
     // the H(3x3) = KR (the 3x3 elements of the M(4x4) Matrix).
-    Matrix33 H(em[0], em[1], em[2],
+    Matrix33 A(em[0], em[1], em[2],
                em[4], em[5], em[6],
                em[8], em[9], em[10]);
-    //std::cout << "H: \n" << H << std::endl;
+    //std::cout << "A: \n" << A << std::endl;
 
-    Matrix hs(3, 1, 0.0);
-    hs[0][0] = em[3];
-    hs[1][0] = em[7];
-    hs[2][0] = em[11];
-    //std::cout << "h: \n" << hs << std::endl;
+    Matrix b(3, 1, 0.0);
+    b[0][0] = em[3];
+    b[1][0] = em[7];
+    b[2][0] = em[11];
+    //std::cout << "b: \n" << b << std::endl;
 
-    // inverse of H
-    Matrix invH = inverse(H);
-    // Let's check if the inverse is correct
-    std::cout << "H * invH: \n" << H * invH << std::endl; // Correct Inversion --> leads to I matrix.
+    double p = A.get_row(2).length(); // UNKNOWN SIGN --> NEED TO FIGURE OUT IF IT'S POSITIVE OR NEGATIVE
+    std::cout << "p: " << p << std::endl;
+    double dota13 = dot(A.get_row(0),A.get_row(2));
+    std::cout << "dota13: " << dota13 << std::endl;
+    double dota23 = dot(A.get_row(1),A.get_row(2));
+    std::cout << "dota23: " << dota23 << std::endl;
+    Vector3D cra13 = cross(A.get_row(0),A.get_row(2));
+    std::cout << "cra13: " << cra13 << std::endl;
+    Vector3D cra23 = cross(A.get_row(1),A.get_row(2));
+    std::cout << "cra23: " << cra23 << std::endl;
+    //cx = (p*p) * dot(A.get_row(0),A.get_row(2)); // I need the dot product of the two vectors
+    cx = (p*p) * dota13 ;
+    std::cout << "cx: " << cx << std::endl;
+    //cy = (p*p) * dot(A.get_row(1),A.get_row(2));
+    cy = (p*p) * dota23 ;
+    std::cout << "cy: " << cy << std::endl;
+    double cos_theta = - dot(cra13,cra23) / (cra13.length() * cra23.length());
+    std::cout << "cos_theta: " << cos_theta << std::endl;
+    double sin_theta = sqrt(1-cos_theta*cos_theta);
+    fx = (p*p) * cra13.length() * sin_theta; //  fx = alpha in his notation
+    std::cout << "fx: " << fx << std::endl;
+    fy = (p*p) * cra23.length(); // beta/sinΘ
+    std::cout << "fy: " << fy << std::endl;
 
-    // Matrix Xo; // remember it must be homogeneous. so I need to go to Euclidean.
-    /// matrix-matrix multiplication
-    Matrix operator*(const Matrix &, const Matrix &);
-    Matrix Xo = -operator*(invH, hs);
-    //std::cout << "Xo: \n" << Xo << std::endl;
+    Vector3D r1 = cra23 / cra23.length();
+    Vector3D r3 = p * A.get_row(2);
+    Vector3D r2 = cross(r3,r1);
 
-    // QR decomposition of matrix H into K(orthogonal matrix) and R(upper triangular matrix). H = K*R.
-    // We follow the Gram-Schmidt process to implement the QR decomposition of matrix H.
-    // STEPS: we retrieve the columns of matrix K. We save the retrieved column into a variable u.
-    // based on variable u we define the k element of K matrix.
-    /// STEP: traverse the columns of a matrix
-    // EXAMPLE MATRIX - NOT FOR USE
-//    Matrix H1(3, 3, 0.0);
-//    H1[0][0] = 1;  H1[1][0] = 1;  H1[2][0] = 0;// H1[3][0] = 1;
-//    H1[0][1] = 1;  H1[1][1] = 0;  H1[2][1] = 1; //H1[3][1] = -1;
-//    H1[0][2] = 0;  H1[1][2] = 1;  H1[2][2] = 1; //H1[3][2] = 0;
-//    std::cout << "H1: \n" << H1 << std::endl;
-
-    Vector a1 = H.get_column(0);
-    Vector e1 = a1/a1.length();
+    // define elements of Matrix K
+    skew = - fx * cos_theta/sin_theta;
+    //Matrix33 K(fx, skew, cx, 0, fy, cy, 0,0,1);
     Matrix33 K;
-    K.set_column(0, e1);
+    K[0][0] = fx;
+    K[0][1] = skew;
+    K[0][2] = cx;
+    K[1][0] = 0;
+    K[1][1] = fy;
+    K[1][2] = cy;
+    K[2][0] = 0;
+    K[2][1] = 0;
+    K[2][2] = 1;
+    std::cout << "K: \n" << K << std::endl;
 
-    for (int cl = 1; cl < H.cols(); cl++){
-        Vector acur = H.get_column(cl);
-        Vector3D subtract(0,0,0);
-        for (auto index=0; index < K.cols(); index++){
-            subtract = subtract + (K.get_column(index))*(dot(acur, (K.get_column(index))));
-        }
-        Vector ucur =  acur - subtract;
-        Vector ecur = ucur/ucur.length();
-        K.set_column(cl, ecur);
-    }
-    //std::cout << "K: \n" << K << std::endl;
-
-    R[0][0] = dot(H.get_column(0), K.get_column(0));
-    R[0][1] = dot(H.get_column(1), K.get_column(0));
-    R[0][2] = dot(H.get_column(2), K.get_column(0));
-    R[1][0] = 0;
-    R[1][1] = dot(H.get_column(1), K.get_column(1));
-    R[1][2] = dot(H.get_column(2), K.get_column(1));
-    R[2][0] = 0;
-    R[2][1] = 0;
-    R[2][2] = dot(H.get_column(2), K.get_column(2));
-    //std::cout << "R: \n" << R << std::endl;
-
-    // FLIP the matrices:
-    Matrix33 FlipRzp(-1,0,0,0,-1,0,0,0,1);
-    K = operator*(K,FlipRzp);
-    R = operator*(FlipRzp, R);
-    //std::cout << "K new: \n" << K << std::endl;
-    std::cout << "R new: \n" << R << std::endl;
-
-
-    // fx, fy,    /// output: the focal length (in our slides, we use 'alpha' and 'beta'),
-    // cx, cy,    /// output: the principal point (in our slides, we use 'u0' and 'v0'),
-    // skew,      /// output: the skew factor ('-alpha * cot_theta')
-    // R,               /// output: the 3x3 rotation matrix encoding camera orientation.
-    // Vector3D& t      /// output：a 3D vector encoding camera translation.
-
-    fx = K[0][0];
-    //std::cout << "fx: " << fx << std::endl;
-    cx = K[0][2];
-    //std::cout << "cx: " << cx << std::endl;
-    cy = K[1][2];
-    //std::cout << "cy: " << cy << std::endl;
-    fy = K[1][1]; // ARE WE USING THE SIMPLE VERSION OF K MATRIX?
-    //std::cout << "fy: " << fy << std::endl;
-    skew = K[0][1];
-    //std::cout << "skew: " << skew << std::endl;
-    t = Vector3D(*Xo[0], *Xo[1], *Xo[2]);
-    //std::cout << "t: " << t << std::endl;
+//    // Compute the inverse of a matrix
+//    Matrix invK;
+//    inverse(K, invK);
+////    t = p * invK * b;
+////
+//    std::cout << "inverse K:/ \n" << invK << std::endl;
 
 
 
-    // TODO: extract intrinsic parameters from M.
-
-    // TODO: extract extrinsic parameters from M.
 
 
-    // TODO by team: check if the Calibration is successful
-    // points_3d
-    //std::vector<Vector2D> points_2d_new;
-//    std::cout << "coordinates of 2D point: " << std::endl;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//    // inverse of H
+//    Matrix invH( inverse(H) );
+//    // Let's check if the inverse is correct
+//    std::cout << "H * invH: \n" << H * invH << std::endl; // Correct Inversion --> leads to I matrix.
+//
+//    // Matrix Xo; // remember it must be homogeneous. so I need to go to Euclidean.
+//    /// matrix-matrix multiplication
+//    Matrix operator*(const Matrix &, const Matrix &);
+//    //Matrix Xo = -operator*(invH, hs);
+//    invH*hs;
+////    std::cout << "Xo: \n" << Xo << std::endl;
+
+//    // QR decomposition of matrix H into K(orthogonal matrix) and R(upper triangular matrix). H = K*R.
+//    // We follow the Gram-Schmidt process to implement the QR decomposition of matrix H.
+//    // STEPS: we retrieve the columns of matrix K. We save the retrieved column into a variable u.
+//    // based on variable u we define the k element of K matrix.
+//    /// STEP: traverse the columns of a matrix
+//    // EXAMPLE MATRIX - NOT FOR USE
+////    Matrix H1(3, 3, 0.0);
+////    H1[0][0] = 1;  H1[1][0] = 1;  H1[2][0] = 0;// H1[3][0] = 1;
+////    H1[0][1] = 1;  H1[1][1] = 0;  H1[2][1] = 1; //H1[3][1] = -1;
+////    H1[0][2] = 0;  H1[1][2] = 1;  H1[2][2] = 1; //H1[3][2] = 0;
+////    std::cout << "H1: \n" << H1 << std::endl;
+//
+//    Vector a1 = H.get_column(0);
+//    Vector e1 = a1/a1.length();
+//    Matrix33 K;
+//    K.set_column(0, e1);
+//
+//    for (int cl = 1; cl < H.cols(); cl++){
+//        Vector acur = H.get_column(cl);
+//        Vector3D subtract(0,0,0);
+//        for (auto index=0; index < K.cols(); index++){
+//            subtract = subtract + (K.get_column(index))*(dot(acur, (K.get_column(index))));
+//        }
+//        Vector ucur =  acur - subtract;
+//        Vector ecur = ucur/ucur.length();
+//        K.set_column(cl, ecur);
+//    }
+//    //std::cout << "K: \n" << K << std::endl;
+//
+//    R[0][0] = dot(H.get_column(0), K.get_column(0));
+//    R[0][1] = dot(H.get_column(1), K.get_column(0));
+//    R[0][2] = dot(H.get_column(2), K.get_column(0));
+//    R[1][0] = 0;
+//    R[1][1] = dot(H.get_column(1), K.get_column(1));
+//    R[1][2] = dot(H.get_column(2), K.get_column(1));
+//    R[2][0] = 0;
+//    R[2][1] = 0;
+//    R[2][2] = dot(H.get_column(2), K.get_column(2));
+//    //std::cout << "R: \n" << R << std::endl;
+//
+//    // FLIP the matrices:
+//    Matrix33 FlipRzp(-1,0,0,0,-1,0,0,0,1);
+//    K = operator*(K,FlipRzp);
+//    R = operator*(FlipRzp, R);
+//    //std::cout << "K new: \n" << K << std::endl;
+//    std::cout << "R new: \n" << R << std::endl;
+//
+//
+//    // fx, fy,    /// output: the focal length (in our slides, we use 'alpha' and 'beta'),
+//    // cx, cy,    /// output: the principal point (in our slides, we use 'u0' and 'v0'),
+//    // skew,      /// output: the skew factor ('-alpha * cot_theta')
+//    // R,               /// output: the 3x3 rotation matrix encoding camera orientation.
+//    // Vector3D& t      /// output：a 3D vector encoding camera translation.
+//
+//    fx = K[0][0];
+//    //std::cout << "fx: " << fx << std::endl;
+//    cx = K[0][2];
+//    //std::cout << "cx: " << cx << std::endl;
+//    cy = K[1][2];
+//    //std::cout << "cy: " << cy << std::endl;
+//    fy = K[1][1]; // ARE WE USING THE SIMPLE VERSION OF K MATRIX?
+//    //std::cout << "fy: " << fy << std::endl;
+//    skew = K[0][1];
+//    //std::cout << "skew: " << skew << std::endl;
+//   // t = Vector3D(*Xo[0], *Xo[1], *Xo[2]);
+//    //std::cout << "t: " << t << std::endl;
+//
+//
+//
+//    // TODO: extract intrinsic parameters from M.
+//
+//    // TODO: extract extrinsic parameters from M.
+//
+//
+//    // TODO by team: check if the Calibration is successful
+//    // points_3d
+//    //std::vector<Vector2D> points_2d_new;
+////    std::cout << "coordinates of 2D point: " << std::endl;
+////    for (const auto& p: points_3d){
+////        Vector4D q = p.homogeneous();
+////        //points_2d_new.emplace_back(M*p);
+////        Vector3D v = M * q; // M is 3 by 4
+////        Vector2D w = v.cartesian();
+////        std::cout << w << std::endl;
+////    }
+//
+//    Matrix34 Rt;
+//    Rt[0][0] = R[0][0];
+//    Rt[0][1] = R[0][1];
+//    Rt[0][2] = R[0][2];
+//    Rt[0][3] = *Xo[0];
+//    Rt[1][0] = R[1][0];
+//    Rt[1][1] = R[1][1];
+//    Rt[1][2] = R[1][2];
+//    Rt[1][3] = *Xo[1];
+//    Rt[2][0] = R[2][0];
+//    Rt[2][1] = R[2][1];
+//    Rt[2][2] = R[2][2];
+//    Rt[2][3] = *Xo[2];
+//    std::cout << "Rt: \n" << Rt << std::endl;
+////
 //    for (const auto& p: points_3d){
 //        Vector4D q = p.homogeneous();
 //        //points_2d_new.emplace_back(M*p);
-//        Vector3D v = M * q; // M is 3 by 4
+//        Vector3D v = (operator*(K,Rt)) * q; // M is 3 by 4
 //        Vector2D w = v.cartesian();
 //        std::cout << w << std::endl;
 //    }
-
-    Matrix34 Rt;
-    Rt[0][0] = R[0][0];
-    Rt[0][1] = R[0][1];
-    Rt[0][2] = R[0][2];
-    Rt[0][3] = *Xo[0];
-    Rt[1][0] = R[1][0];
-    Rt[1][1] = R[1][1];
-    Rt[1][2] = R[1][2];
-    Rt[1][3] = *Xo[1];
-    Rt[2][0] = R[2][0];
-    Rt[2][1] = R[2][1];
-    Rt[2][2] = R[2][2];
-    Rt[2][3] = *Xo[2];
-    std::cout << "Rt: \n" << Rt << std::endl;
-//
-    for (const auto& p: points_3d){
-        Vector4D q = p.homogeneous();
-        //points_2d_new.emplace_back(M*p);
-        Vector3D v = (operator*(K,Rt)) * q; // M is 3 by 4
-        Vector2D w = v.cartesian();
-        std::cout << w << std::endl;
-    }
 
 //    std::cout << "\n\tTODO: After you implement this function, please return 'true' - this will trigger the viewer to\n"
 //                 "\t\tupdate the rendering using your recovered camera parameters. This can help you to visually check\n"
 //                 "\t\tif your calibration is successful or not.\n\n" << std::flush;
     return false;
 } // end of bool function Calibration::calibration
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
