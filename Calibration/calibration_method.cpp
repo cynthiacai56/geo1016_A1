@@ -361,7 +361,11 @@ bool Calibration::calibration(
     R.set_row(1, r2);
     R.set_row(2, r3);
 
-    
+    std::cout << "R: " << R << std::endl;
+
+    std::cout << "t: " << t << std::endl;
+
+
 //    // TODO: extract intrinsic parameters from M.
 //
 //    // TODO: extract extrinsic parameters from M.
@@ -370,6 +374,26 @@ bool Calibration::calibration(
 //    // TODO by team: check if the Calibration is successful
     // points_3d
     //std::vector<Vector2D> points_2d_new;
+
+    // Restructure the M(3x4) matrix: K(3x3), [R T](3x4)
+    Matrix34 Rt;
+    Rt[0][0] = r1[0];
+    Rt[0][1] = r1[1];
+    Rt[0][2] = r1[2];
+    Rt[0][3] = t[0];
+    Rt[1][0] = r2[0];
+    Rt[1][1] = r2[1];
+    Rt[1][2] = r2[2];
+    Rt[1][3] = t[1];
+    Rt[2][0] = r3[0];
+    Rt[2][1] = r3[1];
+    Rt[2][2] = r3[2];
+    Rt[2][3] = t[2];
+
+    std::cout << "Rt: " << Rt << std::endl;
+
+    M = K * Rt;
+
     std::cout << "coordinates of 2D point: " << std::endl;
     for (const auto& p: points_3d){
         Vector4D q = p.homogeneous();
@@ -378,6 +402,9 @@ bool Calibration::calibration(
         Vector2D w = v.cartesian();
         std::cout << w << std::endl;
     }
+
+
+
 
 //    std::cout << "\n\tTODO: After you implement this function, please return 'true' - this will trigger the viewer to\n"
 //                 "\t\tupdate the rendering using your recovered camera parameters. This can help you to visually check\n"
