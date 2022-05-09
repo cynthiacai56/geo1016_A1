@@ -48,154 +48,6 @@ bool Calibration::calibration(
         Matrix33& R,               /// output: the 3x3 rotation matrix encoding camera orientation.
         Vector3D& t)               /// output：a 3D vector encoding camera translation.
 {
-//    // TO BE REMOVED - BEGINNING
-//    std::cout << "\nTODO: I am going to implement the calibration() function in the following file:\n"
-//                 "\t    - calibration_method.cpp\n\n";
-//
-//    std::cout << "[Liangliang]:\n"
-//                 "\tCamera calibration requires computing the SVD and inverse of matrices.\n"
-//                 "\tIn this assignment, I provide you with a 'Matrix' and a 'Vector' data structures for storing and\n"
-//                 "\tmanipulating matrices and vectors of arbitrary sizes. I also wrote some code to show you how to:\n"
-//                 "\t    - compute the SVD of a matrix;\n"
-//                 "\t    - compute the inverse of a matrix;\n"
-//                 "\t    - compute the transpose of a matrix.\n\n"
-//                 "\tFeel free to use any of the provided data structures and functions. The commonly used linear algebra\n"
-//                 "\tfunctions are provided in the following files:\n"
-//                 "\t    - Calibration/matrix.h  Matrices of arbitrary dimensions and related functions.\n"
-//                 "\t    - Calibration/vector.h  Vectors of arbitrary dimensions and related functions.\n"
-//                 "\t    - Calibration/matrix_algo.h  Determinant, inverse, SVD, linear least-squares...\n"
-//                 "\tPlease refer to the above files for a complete list of useful functions and their usage.\n\n"
-//                 "\tIn your final submission, please\n"
-//                 "\t    - delete ALL unrelated test or debug code and avoid unnecessary output.\n"
-//                 "\t    - include all the source code (and please do NOT modify the structure of the directories).\n"
-//                 "\t    - do NOT include the 'build' directory (which contains the intermediate files in a build step).\n"
-//                 "\t    - make sure your code compiles and can reproduce your results without ANY modification.\n\n" << std::flush;
-//
-//    /// Below are a few examples showing some useful data structures and functions.
-//
-//    // This is a 1D array of 'double' values. Alternatively, you can use 'double mat[25]' but you cannot change it
-//    // length. With 'std::vector', you can append/delete/insert elements, and much more. The 'std::vector' can store
-//    // not only 'double', but also any other types of objects. In case you may want to learn more about 'std::vector'
-//    // check here: https://en.cppreference.com/w/cpp/container/vector
-//    std::vector<double> array = {1, 3, 3, 4, 7, 6, 2, 8, 2, 8, 3, 2, 4, 9, 1, 7, 3, 23, 2, 3, 5, 2, 1, 5, 8, 9, 22};
-//    array.push_back(5); // append 5 to the array (so the size will increase by 1).
-//    array.insert(array.end(), 10, 3);  // append ten 3 (so the size will grow by 10).
-//
-//    /// To access the value of an element.
-//    double a = array[2];
-//
-//    /// define a 2D vector/point
-//    Vector2D b(1.1, 2.2);
-//
-//    /// define a 3D vector/point
-//    Vector3D c(1.1, 2.2, 3.3);
-//
-//    /// get the Cartesian coordinates of a (a is treated as Homogeneous coordinates)
-//    Vector2D p = c.cartesian();
-//
-//    /// get the Homogeneous coordinates of p
-//    Vector3D q = p.homogeneous();
-//
-//    /// the length of a vector
-//    double len = p.length();
-//    /// the squared length of a vector
-//    double sqr_len = p.length2();
-//
-//    /// the dot product of two vectors
-//    double dot_prod = dot(p, q);
-//
-//    /// the cross product of two vectors
-//    Vector cross_prod = cross(c, q);
-//
-//    /// normalize this vector
-//    cross_prod.normalize();
-//
-//    // Define an m-by-n double valued matrix.
-//    // Here I use the above array to initialize it. You can also use A(i, j) to initialize/modify/access its elements.
-//    const int m = 6, n = 5;
-//    Matrix A(m, n, array.data());    // 'array.data()' returns a pointer to the array.
-////    std::cout << "M: \n" << A << std::endl;
-//
-//    /// define a 3 by 4 matrix (and all elements initialized to 0.0)
-//    Matrix M(3, 4, 0.0);
-//
-//    /// set first row by a vector
-//    M.set_row(0, Vector4D(1.1, 2.2, 3.3, 4.4));
-//
-//    /// set second column by a vector
-//    M.set_column(1, Vector3D(5.5, 5.5, 5.5));
-//
-//    /// define a 3 by 3 matrix (and all elements initialized to 0.0)
-//    Matrix33 B;
-//
-//    /// define and initialize a 3 by 3 matrix
-//    Matrix33 T(1.1, 2.2, 3.3,
-//               0, 2.2, 3.3,
-//               0, 0, 1);
-//
-//    /// define and initialize a 3 by 4 matrix
-//    Matrix34 P(1.1, 2.2, 3.3, 0,
-//               0, 2.2, 3.3, 1,
-//               0, 0, 1, 1);
-//
-//    /// define a 15 by 9 matrix (and all elements initialized to 0.0)
-//    Matrix W(15, 9, 0.0);
-//    /// set the first row by a 9-dimensional vector
-//    W.set_row(0, {0, 1, 2, 3, 4, 5, 6, 7, 8}); // {....} is equivalent to a std::vector<double>
-//
-//    /// get the number of rows.
-//    int num_rows = W.rows();
-//
-//    /// get the number of columns.
-//    int num_cols = W.cols();
-//
-//    /// get the element at row 1 and column 2
-//    double value = W(1, 2);
-//
-//    /// get the last column of a matrix
-//    Vector last_column = W.get_column(W.cols() - 1);
-//
-//    /// define a 3 by 3 identity matrix
-//    Matrix33 I = Matrix::identity(3, 3, 1.0);
-//
-//    /// matrix-vector product
-//    Vector3D v = M * Vector4D(1, 2, 3, 4); // M is 3 by 4
-//
-//    Matrix U(m, m, 0.0);   // initialized with 0s
-//    Matrix S(m, n, 0.0);   // initialized with 0s
-//    Matrix V(n, n, 0.0);   // initialized with 0s
-//
-//    // Compute the SVD decomposition of A
-//    svd_decompose(A, U, S, V);
-//
-//    // Now let's check if the SVD result is correct
-//
-//    // Check 1: U is orthogonal, so U * U^T must be identity
-////    std::cout << "U*U^T: \n" << U * transpose(U) << std::endl;
-//
-//    // Check 2: V is orthogonal, so V * V^T must be identity
-////    std::cout << "V*V^T: \n" << V * transpose(V) << std::endl;
-//
-//    // Check 3: S must be a diagonal matrix
-////    std::cout << "S: \n" << S << std::endl;
-//
-//    // Check 4: according to the definition, A = U * S * V^T
-////    std::cout << "M - U * S * V^T: \n" << A - U * S * transpose(V) << std::endl;
-//
-//    // Compute the inverse of a matrix
-//    Matrix invT;
-//    inverse(T, invT);
-//    // Let's check if the inverse is correct
-////    std::cout << "B * invB: \n" << B * invB << std::endl;
-//
-//    // TODO: the above code just demonstrates some useful data structures and APIs. Please remove all above code in your
-//    //       final submission.
-//
-//    //--------------------------------------------------------------------------------------------------------------
-    // TO BE REMOVED - END
-
-
-    // implementation starts ...
 
 //    std::cout << "\n[Liangliang]:\n"
 //                 "\tThe input parameters of this function are:\n"
@@ -258,12 +110,12 @@ bool Calibration::calibration(
     Matrix V(12, 12, 0.0); // stores the corresponding singular vectors. We choose the singular vector p12 which minimises the error.
     svd_decompose(P, U, S, V);
 
+    // PRINTS
 //    std::cout << "U: \n" << U << std::endl;
 //    std::cout << "S: \n" << S << std::endl;
 //    std::cout << "V: \n" << V << std::endl;
 
-    // The solution is the last column of VT. Get the last column of VT (transpose(V)). Which is the last row of V.
-    // according to the definition, A = U * S * V^T   --> // get the last column of V.
+    // The solution is the last column of V.
     // Create Matrix M.
     int r = 0;
     int c = 0;
@@ -281,12 +133,9 @@ bool Calibration::calibration(
                em[4], em[5], em[6], em[7],
                em[8], em[9], em[10], em[11]);
     //std::cout << "M: \n" << M << std::endl;
-    // ΜΗΠΩΣ ΥΠΑΡΧΕΙ ΚΑΜΙΑ ΔΥΝΑΤΟΤΗΤΑ ΝΑ ΓΙΝΕΙ RESIZE/reallocate ΚΑΤΕΥΘΕΊΑΝ ;;;
-    //         Change the size/dimension of the matrix.
-    //        Matrix &resize(int rows, int cols);
 
 
-    // the H(3x3) = KR (the 3x3 elements of the M(4x4) Matrix).
+    // the A(3x3) = the 3x3 elements of the M(4x4) Matrix
     Matrix33 A(em[0], em[1], em[2],
                em[4], em[5], em[6],
                em[8], em[9], em[10]);
@@ -299,34 +148,38 @@ bool Calibration::calibration(
     //std::cout << "b: \n" << b << std::endl;
 
 
-
-    // GET ROWS
+//    // TODO: extract intrinsic parameters from M.
+    // Calculate the intrinsic parameters
     double p = 1/A.get_row(2).length(); // UNKNOWN SIGN --> NEED TO FIGURE OUT IF IT'S POSITIVE OR NEGATIVE
-    std::cout << "p: " << p << std::endl; // ρ is correct
-    //p = -38000;
-    std::cout << "p^2: " << p*p << std::endl; // ρ^2 is correct
     double dota13 = dot(A.get_row(0),A.get_row(2));
-    std::cout << "dota13: " << dota13 << std::endl; // correct
     double dota23 = dot(A.get_row(1),A.get_row(2));
-    std::cout << "dota23: " << dota23 << std::endl; // correct
     Vector3D cra13 = cross(A.get_row(0),A.get_row(2));
-    std::cout << "cra13: " << cra13 << std::endl;  // correct
     Vector3D cra23 = cross(A.get_row(1),A.get_row(2));
-    std::cout << "cra23: " << cra23 << std::endl;  // correct
-    //cx = (p*p) * dot(A.get_row(0),A.get_row(2)); // I need the dot product of the two vectors
     cx = (p*p) * dota13 ;
-    std::cout << "cx: " << cx << std::endl;  // correct
     cy = (p*p) * dota23 ;
-    std::cout << "cy: " << cy << std::endl;  // correct
     double cos_theta = - dot(cra13,cra23) / (cra13.length() * cra23.length());   // HERE there might be a problem in case there is a zero denominator.
-    std::cout << "dot(cra13,cra23): " << dot(cra13,cra23) << std::endl;
-    std::cout << "cos_theta: " << cos_theta << std::endl;
     double sin_theta = sqrt(1-cos_theta*cos_theta);
-    std::cout << "sin_theta: " << sin_theta << std::endl;
     fx = (p*p) * cra13.length() * sin_theta; //  fx = alpha in his notation
-    std::cout << "fx: " << fx << std::endl;
     fy = (p*p) * cra23.length(); // beta/sinΘ
-    std::cout << "fy: " << fy << std::endl;
+
+    // PRINT to check the intrinsics
+//    std::cout << "p: " << p << std::endl;
+//    std::cout << "p^2: " << p*p << std::endl;
+//    std::cout << "dota13: " << dota13 << std::endl;
+//    std::cout << "dota23: " << dota23 << std::endl;
+//    std::cout << "cra13: " << cra13 << std::endl;
+//    std::cout << "cra23: " << cra23 << std::endl;
+//    std::cout << "cx: " << cx << std::endl;
+//    std::cout << "cy: " << cy << std::endl;
+//    std::cout << "dot(cra13,cra23): " << dot(cra13,cra23) << std::endl;
+//    std::cout << "cos_theta: " << cos_theta << std::endl;
+//    std::cout << "sin_theta: " << sin_theta << std::endl;
+//    std::cout << "fx: " << fx << std::endl;
+//    std::cout << "fy: " << fy << std::endl;
+
+
+
+//    // TODO: extract extrinsic parameters from M.
 
     Vector3D r1 = cra23 / cra23.length();
     Vector3D r3 = p * A.get_row(2);
@@ -366,16 +219,8 @@ bool Calibration::calibration(
     std::cout << "t: " << t << std::endl;
 
 
-//    // TODO: extract intrinsic parameters from M.
-//
-//    // TODO: extract extrinsic parameters from M.
-//
-//
-//    // TODO by team: check if the Calibration is successful
-    // points_3d
-    //std::vector<Vector2D> points_2d_new;
-
-    // Restructure the M(3x4) matrix: K(3x3), [R T](3x4)
+    // TODO by team: check if the Calibration is successful
+    // Restructure the M(3x4) matrix with the help of K(3x3) and [R,T](3x4) matrices.
     Matrix34 Rt;
     Rt[0][0] = r1[0];
     Rt[0][1] = r1[1];
@@ -392,6 +237,7 @@ bool Calibration::calibration(
 
     std::cout << "Rt: " << Rt << std::endl;
 
+    // reconstruction of M matrix
     M = K * Rt;
 
     std::cout << "coordinates of 2D point: " << std::endl;
@@ -402,7 +248,6 @@ bool Calibration::calibration(
         Vector2D w = v.cartesian();
         std::cout << w << std::endl;
     }
-
 
 
 
