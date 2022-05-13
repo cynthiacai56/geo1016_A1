@@ -80,27 +80,23 @@ bool Calibration::calibration(
     std::cout<<"m: "<<m <<std::endl;
     std::cout<<"n: "<<n <<std::endl;
     Matrix P(m, n, 0.0);
-    int i0 = 0;
-    int i = 0;
-    int ii = 1;
-    for (auto el3: points_3d){
-        int j = 0;
-        for (auto el2: points_2d){
-            // I want something to be happening when i == j .
-            if (i0 == j){
-                // then I have everything I need to construct the row
-                // set the first row by a 9-dimensional vector
-                P.set_row(i, {el3.x(), el3.y(), el3.z(), 1, 0, 0, 0, 0, -el2.x()*el3.x(), -el2.x()*el3.y(), -el2.x()*el3.z(), -el2.x()}); // {....} is equivalent to a std::vector<double>
-                P.set_row(ii, {0, 0, 0, 0, el3.x(), el3.y(), el3.z(), 1, -el2.y()*el3.x(), -el2.y()*el3.y(), -el2.y()*el3.z(), -el2.y()});
-            }
-            j++;
-        }
-        i= i+2;
-        ii = ii+2;
-        i0++;
-    }
-    //std::cout << "P: \n" << P << std::endl;
 
+
+    // SIMPLIFY
+    int fab = 0;
+    int io=0;
+    for (auto el3: points_3d){
+        // I want something to be happening when i == j .
+        Vector2D el2 = points_2d[fab];
+        // then I have everything I need to construct the row
+        // set the first row by a 9-dimensional vector
+        P.set_row(io, {el3.x(), el3.y(), el3.z(), 1, 0, 0, 0, 0, -el2.x()*el3.x(), -el2.x()*el3.y(), -el2.x()*el3.z(), -el2.x()}); // {....} is equivalent to a std::vector<double>
+        io++;
+        P.set_row(io, {0, 0, 0, 0, el3.x(), el3.y(), el3.z(), 1, -el2.y()*el3.x(), -el2.y()*el3.y(), -el2.y()*el3.z(), -el2.y()});
+        fab++;
+        io++;
+    }
+    std::cout << "P: \n" << P << std::endl;
 
     // TODO: solve for M (the whole projection matrix, i.e., M = K * [R, t]) using SVD decomposition.
     //   Optional: you can check if your M is correct by applying M on the 3D points. If correct, the projected point
@@ -196,16 +192,7 @@ bool Calibration::calibration(
     std::cout << "skew: " << skew << std::endl;
 
     //Matrix33 K(fx, skew, cx, 0, fy, cy, 0,0,1);
-    Matrix33 K;
-    K[0][0] = fx;
-    K[0][1] = skew;
-    K[0][2] = cx;
-    K[1][0] = 0;
-    K[1][1] = fy;
-    K[1][2] = cy;
-    K[2][0] = 0;
-    K[2][1] = 0;
-    K[2][2] = 1;
+    Matrix33 K(fx,skew,cx,0,fy,cy,0,0,1);
     std::cout << "K: \n" << K << std::endl;
 
 //    // Compute the inverse of a matrix
@@ -227,20 +214,7 @@ bool Calibration::calibration(
 
     // TODO by team: check if the Calibration is successful
     // Restructure the M(3x4) matrix with the help of K(3x3) and [R,T](3x4) matrices.
-    Matrix34 Rt;
-    Rt[0][0] = r1[0];
-    Rt[0][1] = r1[1];
-    Rt[0][2] = r1[2];
-    Rt[0][3] = t[0];
-    Rt[1][0] = r2[0];
-    Rt[1][1] = r2[1];
-    Rt[1][2] = r2[2];
-    Rt[1][3] = t[1];
-    Rt[2][0] = r3[0];
-    Rt[2][1] = r3[1];
-    Rt[2][2] = r3[2];
-    Rt[2][3] = t[2];
-
+    Matrix34 Rt(r1[0],r1[1],r1[2],t[0], r2[0],r2[1],r2[2], t[1],r3[0],r3[1],r3[2],t[2]);
     std::cout << "Rt: " << Rt << std::endl;
 
     // reconstruction of M matrix
