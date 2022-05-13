@@ -25,16 +25,11 @@
 #include "calibration.h"
 #include "matrix_algo.h"
 
-
-
 // added by the team
 #include <iostream>
 #include <fstream>
 
-
 using namespace easy3d;
-
-
 
 /**
  * TODO: Finish this function for calibrating a camera from the corresponding 3D-2D point pairs.
@@ -81,8 +76,6 @@ bool Calibration::calibration(
     std::cout<<"n: "<<n <<std::endl;
     Matrix P(m, n, 0.0);
 
-
-    // SIMPLIFY
     int fab = 0;
     int io=0;
     for (auto el3: points_3d){
@@ -99,14 +92,13 @@ bool Calibration::calibration(
     std::cout << "P: \n" << P << std::endl;
 
     // TODO: solve for M (the whole projection matrix, i.e., M = K * [R, t]) using SVD decomposition.
-    //   Optional: you can check if your M is correct by applying M on the 3D points. If correct, the projected point
-    //             should be very close to your input images points.
 
     //Compute the SVD decomposition of A
     Matrix U(m, m, 0.0);
     Matrix S(m, 12, 0.0); // diagonal matrix that contains the singular values in descending order.
     Matrix V(12, 12, 0.0); // stores the corresponding singular vectors. We choose the singular vector p12 which minimises the error.
     svd_decompose(P, U, S, V);
+
 
     // PRINTS
 //    std::cout << "U: \n" << U << std::endl;
@@ -132,7 +124,18 @@ bool Calibration::calibration(
                em[8], em[9], em[10], em[11]);
     //std::cout << "M: \n" << M << std::endl;
 
-    // verification of the correctness of M matrix.
+    //   TODO: Optional: you can check if your M is correct by applying M on the 3D points. If correct, the projected point
+    //             should be very close to your input images points.
+    std::cout << "coordinates of 2D point: " << std::endl;
+    for (const auto& p: points_3d){
+        Vector4D q = p.homogeneous();
+        //points_2d_new.emplace_back(M*p);
+        Vector3D v = M * q; // M is 3 by 4
+        Vector2D w = v.cartesian();
+        std::cout << w << std::endl;
+    }
+
+    //  Alternative verification of the correctness of M matrix.
     std::cout << "P*m" << (P * em).length() << std::endl;
 
 
@@ -162,40 +165,39 @@ bool Calibration::calibration(
     double sin_theta = sqrt(1-cos_theta*cos_theta);
     fx = (p*p) * cra13.length() * sin_theta; //  fx = alpha in his notation
     fy = (p*p) * cra23.length(); // beta/sinΘ
-
-    // PRINT to check the intrinsics
-    std::cout << "p: " << p << std::endl;
-    std::cout << "p^2: " << p*p << std::endl;
-    std::cout << "dota13: " << dota13 << std::endl;
-    std::cout << "dota23: " << dota23 << std::endl;
-    std::cout << "cra13: " << cra13 << std::endl;
-    std::cout << "cra23: " << cra23 << std::endl;
-    std::cout << "cx: " << cx << std::endl;
-    std::cout << "cy: " << cy << std::endl;
-    std::cout << "dot(cra13,cra23): " << dot(cra13,cra23) << std::endl;
-    std::cout << "cos_theta: " << cos_theta << std::endl;
-    std::cout << "sin_theta: " << sin_theta << std::endl;
-    std::cout << "fx: " << fx << std::endl;
-    std::cout << "fy: " << fy << std::endl;
+    skew = - fx * cos_theta/sin_theta;
+    std::cout << "skew: " << skew << std::endl;
 
 
+    // PRINTING STATEMENTS to check the intrinsics and extrinsics
+//    std::cout << "p: " << p << std::endl;
+//    std::cout << "p^2: " << p*p << std::endl;
+//    std::cout << "dota13: " << dota13 << std::endl;
+//    std::cout << "dota23: " << dota23 << std::endl;
+//    std::cout << "cra13: " << cra13 << std::endl;
+//    std::cout << "cra23: " << cra23 << std::endl;
+//    std::cout << "cx: " << cx << std::endl;
+//    std::cout << "cy: " << cy << std::endl;
+//    std::cout << "dot(cra13,cra23): " << dot(cra13,cra23) << std::endl;
+//    std::cout << "cos_theta: " << cos_theta << std::endl;
+//    std::cout << "sin_theta: " << sin_theta << std::endl;
+//    std::cout << "fx: " << fx << std::endl;
+//    std::cout << "fy: " << fy << std::endl;
+//
 
-//    // TODO: extract extrinsic parameters from M.
 
+    // TODO: extract extrinsic parameters from M.
     Vector3D r1 = cra23 / cra23.length();
     Vector3D r3 = p * A.get_row(2);
     Vector3D r2 = cross(r3,r1);
 
 
     // define elements of Matrix K
-    skew = - fx * cos_theta/sin_theta;
-    std::cout << "skew: " << skew << std::endl;
-
     //Matrix33 K(fx, skew, cx, 0, fy, cy, 0,0,1);
     Matrix33 K(fx,skew,cx,0,fy,cy,0,0,1);
     std::cout << "K: \n" << K << std::endl;
 
-//    // Compute the inverse of a matrix
+    // Compute the inverse of a matrix and populate t (translation vector)
     Matrix invK;
     inverse(K, invK);
     Matrix t1 = p * (invK * b);
@@ -203,12 +205,13 @@ bool Calibration::calibration(
     t[1] = t1[1][0];
     t[2] = t1[2][0];
 
+    // construct R matrix
     R.set_row(0, r1);
     R.set_row(1, r2);
     R.set_row(2, r3);
 
+    // print to check
     std::cout << "R: " << R << std::endl;
-
     std::cout << "t: " << t << std::endl;
 
 
@@ -218,19 +221,19 @@ bool Calibration::calibration(
     std::cout << "Rt: " << Rt << std::endl;
 
     // reconstruction of M matrix
+    // traverse the 3d points and apply the projection matrix to get the estimated 2d points
     M = K * Rt;
     std::cout<< "M_new: " << M  << std::endl;
     std::cout << "coordinates of 2D point: " << std::endl;
-    for (const auto& p: points_3d){
-        Vector4D q = p.homogeneous();
+    for (const auto& p1: points_3d){
+        Vector4D q = p1.homogeneous();
         //points_2d_new.emplace_back(M*p);
         Vector3D v = M * q; // M is 3 by 4
         Vector2D w = v.cartesian();
         std::cout << w << std::endl;
     }
 
-
-
+    
 //    std::cout << "\n\tTODO: After you implement this function, please return 'true' - this will trigger the viewer to\n"
 //                 "\t\tupdate the rendering using your recovered camera parameters. This can help you to visually check\n"
 //                 "\t\tif your calibration is successful or not.\n\n" << std::flush;
