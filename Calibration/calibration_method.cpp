@@ -25,6 +25,8 @@
 #include "calibration.h"
 #include "matrix_algo.h"
 
+
+
 // added by the team
 #include <iostream>
 #include <fstream>
@@ -128,11 +130,14 @@ bool Calibration::calibration(
     }
     //std::cout << "elements for em: " << em << std::endl;
 
-    // my Projection Matrix M
+    // Projection Matrix M
     Matrix34 M(em[0], em[1], em[2], em[3],
                em[4], em[5], em[6], em[7],
                em[8], em[9], em[10], em[11]);
     //std::cout << "M: \n" << M << std::endl;
+
+    // verification of the correctness of M matrix.
+    std::cout << "P*m" << (P * em).length() << std::endl;
 
 
     // the A(3x3) = the 3x3 elements of the M(4x4) Matrix
@@ -150,7 +155,7 @@ bool Calibration::calibration(
 
 //    // TODO: extract intrinsic parameters from M.
     // Calculate the intrinsic parameters
-    double p = 1/A.get_row(2).length(); // UNKNOWN SIGN --> NEED TO FIGURE OUT IF IT'S POSITIVE OR NEGATIVE
+    double p =  1/A.get_row(2).length(); // UNKNOWN SIGN --> NEED TO FIGURE OUT IF IT'S POSITIVE OR NEGATIVE
     double dota13 = dot(A.get_row(0),A.get_row(2));
     double dota23 = dot(A.get_row(1),A.get_row(2));
     Vector3D cra13 = cross(A.get_row(0),A.get_row(2));
@@ -163,19 +168,19 @@ bool Calibration::calibration(
     fy = (p*p) * cra23.length(); // beta/sinΘ
 
     // PRINT to check the intrinsics
-//    std::cout << "p: " << p << std::endl;
-//    std::cout << "p^2: " << p*p << std::endl;
-//    std::cout << "dota13: " << dota13 << std::endl;
-//    std::cout << "dota23: " << dota23 << std::endl;
-//    std::cout << "cra13: " << cra13 << std::endl;
-//    std::cout << "cra23: " << cra23 << std::endl;
-//    std::cout << "cx: " << cx << std::endl;
-//    std::cout << "cy: " << cy << std::endl;
-//    std::cout << "dot(cra13,cra23): " << dot(cra13,cra23) << std::endl;
-//    std::cout << "cos_theta: " << cos_theta << std::endl;
-//    std::cout << "sin_theta: " << sin_theta << std::endl;
-//    std::cout << "fx: " << fx << std::endl;
-//    std::cout << "fy: " << fy << std::endl;
+    std::cout << "p: " << p << std::endl;
+    std::cout << "p^2: " << p*p << std::endl;
+    std::cout << "dota13: " << dota13 << std::endl;
+    std::cout << "dota23: " << dota23 << std::endl;
+    std::cout << "cra13: " << cra13 << std::endl;
+    std::cout << "cra23: " << cra23 << std::endl;
+    std::cout << "cx: " << cx << std::endl;
+    std::cout << "cy: " << cy << std::endl;
+    std::cout << "dot(cra13,cra23): " << dot(cra13,cra23) << std::endl;
+    std::cout << "cos_theta: " << cos_theta << std::endl;
+    std::cout << "sin_theta: " << sin_theta << std::endl;
+    std::cout << "fx: " << fx << std::endl;
+    std::cout << "fy: " << fy << std::endl;
 
 
 
@@ -188,6 +193,7 @@ bool Calibration::calibration(
 
     // define elements of Matrix K
     skew = - fx * cos_theta/sin_theta;
+    std::cout << "skew: " << skew << std::endl;
 
     //Matrix33 K(fx, skew, cx, 0, fy, cy, 0,0,1);
     Matrix33 K;
@@ -239,7 +245,7 @@ bool Calibration::calibration(
 
     // reconstruction of M matrix
     M = K * Rt;
-
+    std::cout<< "M_new: " << M  << std::endl;
     std::cout << "coordinates of 2D point: " << std::endl;
     for (const auto& p: points_3d){
         Vector4D q = p.homogeneous();
